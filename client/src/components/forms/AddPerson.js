@@ -1,39 +1,15 @@
 import { useMutation } from '@apollo/client'
 import { Button, Form, Input } from 'antd'
 import { useEffect, useState } from 'react'
-import { ADD_PERSON, GET_PEOPLE } from '../../graphql/queries'
 import { v4 as uuidv4 } from 'uuid'
+import { ADD_PERSON, GET_PEOPLE } from '../../graphql/queries'
 
 const AddPerson = () => {
+  const [id] = useState(uuidv4())
   const [form] = Form.useForm()
   const [, forceUpdate] = useState()
 
-  const [addPerson] = useMutation(ADD_PERSON, {
-    update(cache, { data: { addPerson } }) {
-      const existingData = cache.readQuery({ query: GET_PEOPLE });
-      if (existingData) {
-        cache.writeQuery({
-          query: GET_PEOPLE,
-          data: {
-            peoples: [...existingData.peoples, { 
-              ...addPerson,
-              cars: [] 
-            }]
-          }
-        });
-      } else {
-        cache.writeQuery({
-          query: GET_PEOPLE,
-          data: {
-            peoples: [{
-              ...addPerson,
-              cars: []
-            }]
-          }
-        });
-      }
-    }
-  })
+  const [addPerson] = useMutation(ADD_PERSON)
 
   useEffect(() => {
     forceUpdate({})
@@ -41,40 +17,51 @@ const AddPerson = () => {
 
   const onFinish = values => {
     const { firstName, lastName } = values
+
     addPerson({
       variables: {
-        id: uuidv4(), 
+        id,
         firstName,
         lastName
+      },
+      update: (cache, { data: { addPerson } }) => {
+        const data = cache.readQuery({ query: GET_PEOPLE })
+        cache.writeQuery({
+          query: GET_PEOPLE,
+          data: {
+            ...data,
+            people: [...data.people, addPerson]
+          }
+        })
       }
     })
     form.resetFields()
   }
 
   return (
-    <div  style={{ marginBottom: '4px', textAlign: 'center'}} >
-    <h2 style={{ paddingBottom: '10px' ,borderBottom: '1px solid #e8e8e8'}}><span>Add Person</span></h2>
+    <div  style={{ marginBottom: '4px', textAlign: 'center', display:'grid', alignItems:'center'}} >
+    <h2 style={{ paddingBottom: '10px' ,borderBottom: '1px solid #e8e8e8', alignSelf:'center'}}><span>Add Person</span></h2>
     <Form
-      name='add-person-form'
-      layout='inline'
-      size='large'
-      style={{ marginBottom: '40px' }}
+      name="add-person-form"
+      layout="inline"
+      size="large"
+      style={{ marginBottom: '40px', display:"flex" , justifySelf:'center'}}
       form={form}
       onFinish={onFinish}
     >
-     
-     
-      <Form.Item  label={<span>First Name</span>} name='firstName' rules={[{ required: true, message: 'Please enter first name' }]}>
-        <Input placeholder='First Name' />
+      <Form.Item  label={<span>First Name</span>} name='firstName' rules={[{ required: true, message: 'Please enter first name' }]}
+      >
+        <Input placeholder="First Name" />
       </Form.Item>
-      <Form.Item label={<span>Last Name</span>} name='lastName' rules={[{ required: true, message: 'Please enter last name' }]}>
-        <Input placeholder='Last Name' />
+      <Form.Item label={<span>Last Name</span>} name='lastName' rules={[{ required: true, message: 'Please enter last name' }]}
+      >
+        <Input placeholder="Last Name" />
       </Form.Item>
       <Form.Item shouldUpdate={true}>
         {() => (
           <Button
-            type='primary'
-            htmlType='submit'
+            type="primary"
+            htmlType="submit"
             disabled={
               !form.isFieldsTouched(true) ||
               form.getFieldsError().filter(({ errors }) => errors.length).length
@@ -86,7 +73,6 @@ const AddPerson = () => {
       </Form.Item>
     </Form>
     </div>
-
   )
 }
 

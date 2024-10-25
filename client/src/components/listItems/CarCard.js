@@ -1,13 +1,47 @@
 import { Card } from 'antd'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useState } from 'react'
-import { EditOutlined } from '@ant-design/icons'
+import { useMutation } from '@apollo/client'
+import { GET_PEOPLE, REMOVE_CAR } from '../../graphql/queries'
 import UpdateCar from '../forms/UpdateCar'
-import RemoveCar from '../buttons/RemoveCar'
 
 const CarCard = ({ id, year, make, model, price, personId }) => {
   const [editMode, setEditMode] = useState(false)
+  const styles = getStyles()
+
+  const [removeCar] = useMutation(REMOVE_CAR, {
+    update(cache, { data: { removeCar } }) {
+      const { people } = cache.readQuery({ query: GET_PEOPLE })
+      const updatedPeople = people.map(person => {
+        if (person.id === removeCar.personId) {
+          return {
+            ...person,
+            cars: person.cars.filter(car => car.id !== removeCar.id)
+          }
+        }
+        return person
+      })
+      cache.writeQuery({
+        query: GET_PEOPLE,
+        data: {
+          people: updatedPeople
+        }
+      })
+    }
+  })
 
   const handleButtonClick = () => setEditMode(!editMode)
+
+  const handleDelete = () => {
+    let result = window.confirm('Are you sure you want to delete this car?')
+    if (result) {
+      removeCar({
+        variables: {
+          id
+        }
+      })
+    }
+  }
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
@@ -17,7 +51,7 @@ const CarCard = ({ id, year, make, model, price, personId }) => {
   }
 
   return (
-    <div style={{ marginBottom: '8px' }}>
+    <div style={styles.container}>
       {editMode ? (
         <UpdateCar
           id={id}
@@ -31,15 +65,21 @@ const CarCard = ({ id, year, make, model, price, personId }) => {
       ) : (
         <Card
           type="inner"
-          title={`${year} ${make} ${model} - ${formatPrice(price)}`}
+          title={`${year} ${make} ${model} -> ${formatPrice(price)}`}
           actions={[
             <EditOutlined key='edit' onClick={handleButtonClick} />,
-            <RemoveCar id={id} />
+            <DeleteOutlined key='delete' style={{ color: 'red' }} onClick={handleDelete} />
           ]}
         />
       )}
     </div>
   )
 }
+
+const getStyles = () => ({
+  container: {
+    marginBottom: '10px'
+  }
+})
 
 export default CarCard

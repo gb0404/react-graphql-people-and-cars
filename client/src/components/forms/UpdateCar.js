@@ -1,75 +1,27 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { Button, Form, Input, InputNumber, Select } from 'antd'
 import { useEffect, useState } from 'react'
-import { UPDATE_CAR, GET_PEOPLE, GET_CARS } from '../../graphql/queries'
+import { GET_PEOPLE, UPDATE_CAR } from '../../graphql/queries'
 
-const UpdateCar = props => {
-  const { id, year, make, model, price, personId, onButtonClick } = props
+const UpdateCar = ({ id, year, make, model, price, personId, onButtonClick }) => {
   const [form] = Form.useForm()
   const [, forceUpdate] = useState()
 
   const { loading, error, data } = useQuery(GET_PEOPLE)
   const [updateCar] = useMutation(UPDATE_CAR, {
-    update(cache, { data: { updateCar } }) {
-      try {
-        // Update cars list
-        const existingCars = cache.readQuery({ query: GET_CARS });
-        if (existingCars) {
-          const updatedCars = existingCars.cars.map(car => 
-            car.id === updateCar.id ? updateCar : car
-          );
-          
-          cache.writeQuery({
-            query: GET_CARS,
-            data: {
-              cars: updatedCars
-            }
-          });
-        }
-
-        const { peoples } = cache.readQuery({ query: GET_PEOPLE });
-        const updatedPeoples = peoples.map(person => {
-          if (person.id === personId && person.id !== updateCar.personId) {
-            return {
-              ...person,
-              cars: (person.cars || []).filter(car => car.id !== updateCar.id)
-            };
-          }
-          if (person.id === updateCar.personId && person.id !== personId) {
-            return {
-              ...person,
-              cars: [...(person.cars || []), updateCar]
-            };
-          }
-          if (person.id === updateCar.personId && person.id === personId) {
-            return {
-              ...person,
-              cars: (person.cars || []).map(car => 
-                car.id === updateCar.id ? updateCar : car
-              )
-            };
-          }
-          return person;
-        });
-
-        cache.writeQuery({
-          query: GET_PEOPLE,
-          data: {
-            peoples: updatedPeoples
-          }
-        });
-      } catch (e) {
-        console.error('Cache update error:', e);
-      }
-    }
-  });
+    refetchQueries: [{ query: GET_PEOPLE }]  // Add this to fix the update issue
+  })
 
   useEffect(() => {
-    forceUpdate()
+    forceUpdate({})
   }, [])
 
+  if (loading) return 'Loading...'
+  if (error) return `Error! ${error.message}`
+
   const onFinish = values => {
-    const { year, make, model, price, personId: newPersonId } = values
+    const { year, make, model, price, personId } = values
+
     updateCar({
       variables: {
         id,
@@ -77,14 +29,11 @@ const UpdateCar = props => {
         make,
         model,
         price: parseFloat(price),
-        personId: newPersonId
+        personId
       }
     })
     onButtonClick()
   }
-
-  if (loading) return 'Loading...'
-  if (error) return `Error! ${error.message}`
 
   return (
     <Form
@@ -100,32 +49,32 @@ const UpdateCar = props => {
         personId
       }}
     >
-      <Form.Item name='year' rules={[{ required: true, message: 'Please enter year' }]}>
-        <InputNumber placeholder='Year' />
+      <Form.Item name="year" rules={[{ required: true, message: 'Please enter year' }]}>
+        <InputNumber placeholder="Year" min={1900} max={2024} />
       </Form.Item>
-      <Form.Item name='make' rules={[{ required: true, message: 'Please enter make' }]}>
-        <Input placeholder='Make' />
+      <Form.Item name="make" rules={[{ required: true, message: 'Please enter make' }]}>
+        <Input placeholder="Make" />
       </Form.Item>
-      <Form.Item name='model' rules={[{ required: true, message: 'Please enter model' }]}>
-        <Input placeholder='Model' />
+      <Form.Item name="model" rules={[{ required: true, message: 'Please enter model' }]}>
+        <Input placeholder="Model" />
       </Form.Item>
-      <Form.Item name='price' rules={[{ required: true, message: 'Please enter price' }]}>
+      <Form.Item name="price" rules={[{ required: true, message: 'Please enter price' }]}>
         <InputNumber
+          placeholder="Price"
           formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
           parser={value => value.replace(/\$\s?|(,*)/g, '')}
-          placeholder='Price'
         />
       </Form.Item>
-      <Form.Item name='personId' rules={[{ required: true, message: 'Please select person' }]}>
-        <Select style={{ width: 200 }}>
-          {data.peoples.map(person => (
+      <Form.Item name="personId" rules={[{ required: true, message: 'Please select a person' }]}>
+        <Select placeholder="Select a Person">
+          {data.people.map(person => (
             <Select.Option key={person.id} value={person.id}>
               {person.firstName} {person.lastName}
             </Select.Option>
           ))}
         </Select>
       </Form.Item>
-      <Form.Item shouldUpdate={true}>
+      <Form.Item>
         <Button type='primary' htmlType='submit'>
           Update Car
         </Button>

@@ -2,7 +2,7 @@ import { gql } from '@apollo/client'
 
 export const GET_PEOPLE = gql`
   query GetPeople {
-    peoples {
+    people {
       id
       firstName
       lastName
@@ -12,29 +12,10 @@ export const GET_PEOPLE = gql`
         make
         model
         price
-        personId
       }
     }
   }
-`;
-
-export const GET_CARS = gql`
-  query GetCars {
-    cars {
-      id
-      year
-      make
-      model
-      price
-      personId
-      person {
-        id
-        firstName
-        lastName
-      }
-    }
-  }
-`;
+`
 
 export const GET_PERSON_WITH_CARS = gql`
   query GetPersonWithCars($id: String!) {
@@ -96,7 +77,7 @@ export const ADD_CAR = gql`
   }
 `
 
-  export const UPDATE_CAR = gql`
+export const UPDATE_CAR = gql`
   mutation UpdateCar($id: String!, $year: Int!, $make: String!, $model: String!, $price: Float!, $personId: String!) {
     updateCar(id: $id, year: $year, make: $make, model: $model, price: $price, personId: $personId) {
       id
@@ -119,4 +100,5 @@ export const REMOVE_CAR = gql`
       price
       personId
     }
-  }`
+  }
+`

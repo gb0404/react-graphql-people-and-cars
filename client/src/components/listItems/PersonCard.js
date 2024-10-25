@@ -1,19 +1,43 @@
 import { Card } from 'antd'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useState } from 'react'
-import { EditOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import UpdatePerson from '../forms/UpdatePerson'
-import RemovePerson from '../buttons/RemovePerson'
 import CarCard from './CarCard'
+import { useMutation } from '@apollo/client'
+import { GET_PEOPLE, REMOVE_PERSON } from '../../graphql/queries'
 
-const PersonCard = ({ id, firstName, lastName, cars = [] }) => {
+const PersonCard = ({ id, firstName, lastName, cars }) => {
   const [editMode, setEditMode] = useState(false)
   const styles = getStyles()
 
+  const [removePerson] = useMutation(REMOVE_PERSON, {
+    update(cache, { data: { removePerson } }) {
+      const { people } = cache.readQuery({ query: GET_PEOPLE })
+      cache.writeQuery({
+        query: GET_PEOPLE,
+        data: {
+          people: people.filter(person => person.id !== removePerson.id)
+        }
+      })
+    }
+  })
+
   const handleButtonClick = () => setEditMode(!editMode)
 
+  const handleDelete = () => {
+    let result = window.confirm('Are you sure you want to delete this person and all their cars?')
+    if (result) {
+      removePerson({
+        variables: {
+          id
+        }
+      })
+    }
+  }
+
   return (
-    <div>
+    <div style={styles.container}>
       {editMode ? (
         <UpdatePerson
           id={id}
@@ -24,18 +48,22 @@ const PersonCard = ({ id, firstName, lastName, cars = [] }) => {
       ) : (
         <Card
           title={`${firstName} ${lastName}`}
-          style={styles.card}
           actions={[
             <EditOutlined key='edit' onClick={handleButtonClick} />,
-            <RemovePerson id={id} />
+            <DeleteOutlined key='delete' style={{ color: 'red' }} onClick={handleDelete} />
           ]}
+          style={styles.card}
         >
-          {cars.map(car => (
-            <CarCard key={car.id} {...car} />
-          ))}
-          
-          {<Link to={`/people/${id}`}>LEARN MORE</Link>}
-
+            {cars?.length ? (
+              cars.map(car => (
+                <CarCard key={car.id} {...car} />
+              ))
+            ) : (
+              <p>No cars for this person</p>
+            )}
+               <Link to={`/people/${id}`}>
+               Learn More
+            </Link>
         </Card>
       )}
     </div>
@@ -43,8 +71,11 @@ const PersonCard = ({ id, firstName, lastName, cars = [] }) => {
 }
 
 const getStyles = () => ({
+  container: {
+    marginBottom: '20px'
+  },
   card: {
-    width: '1200px',
+    width: '100%',
     marginBottom: '16px'
   }
 })

@@ -3,8 +3,7 @@ import { Button, Form, Input } from 'antd'
 import { useEffect, useState } from 'react'
 import { UPDATE_PERSON } from '../../graphql/queries'
 
-const UpdatePerson = props => {
-  const { id, firstName, lastName, onButtonClick } = props
+const UpdatePerson = ({ id, firstName, lastName, onButtonClick }) => {
   const [form] = Form.useForm()
   const [, forceUpdate] = useState()
 
@@ -16,6 +15,7 @@ const UpdatePerson = props => {
 
   const onFinish = values => {
     const { firstName, lastName } = values
+
     updatePerson({
       variables: {
         id,
@@ -37,10 +37,16 @@ const UpdatePerson = props => {
         lastName
       }}
     >
-      <Form.Item name='firstName' rules={[{ required: true, message: 'Please enter first name' }]}>
+      <Form.Item
+        name='firstName'
+        rules={[{ required: true, message: 'Please enter first name' }]}
+      >
         <Input placeholder='First Name' />
       </Form.Item>
-      <Form.Item name='lastName' rules={[{ required: true, message: 'Please enter last name' }]}>
+      <Form.Item
+        name='lastName'
+        rules={[{ required: true, message: 'Please enter last name' }]}
+      >
         <Input placeholder='Last Name' />
       </Form.Item>
       <Form.Item shouldUpdate={true}>
@@ -61,4 +67,5 @@ const UpdatePerson = props => {
     </Form>
   )
 }
+
 export default UpdatePerson
