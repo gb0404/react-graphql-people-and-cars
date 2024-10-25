@@ -1,5 +1,3 @@
-import PersonCard from '../listItems/PersonCard'
-
 const PersonList = () => {
   return (
     <div>

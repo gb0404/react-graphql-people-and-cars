@@ -5,19 +5,33 @@ import { ADD_PERSON, GET_PEOPLE } from '../../graphql/queries'
 import { v4 as uuidv4 } from 'uuid'
 
 const AddPerson = () => {
-  const [id] = useState(uuidv4())
   const [form] = Form.useForm()
   const [, forceUpdate] = useState()
 
   const [addPerson] = useMutation(ADD_PERSON, {
     update(cache, { data: { addPerson } }) {
-      const { peoples } = cache.readQuery({ query: GET_PEOPLE })
-      cache.writeQuery({
-        query: GET_PEOPLE,
-        data: {
-          peoples: [...peoples, addPerson]
-        }
-      })
+      const existingData = cache.readQuery({ query: GET_PEOPLE });
+      if (existingData) {
+        cache.writeQuery({
+          query: GET_PEOPLE,
+          data: {
+            peoples: [...existingData.peoples, { 
+              ...addPerson,
+              cars: [] 
+            }]
+          }
+        });
+      } else {
+        cache.writeQuery({
+          query: GET_PEOPLE,
+          data: {
+            peoples: [{
+              ...addPerson,
+              cars: []
+            }]
+          }
+        });
+      }
     }
   })
 
@@ -29,7 +43,7 @@ const AddPerson = () => {
     const { firstName, lastName } = values
     addPerson({
       variables: {
-        id,
+        id: uuidv4(), 
         firstName,
         lastName
       }

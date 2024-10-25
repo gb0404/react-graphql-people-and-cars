@@ -5,7 +5,7 @@ import { expressMiddleware } from '@apollo/server/express4'
 import http from 'http'
 import cors from 'cors'
 import bodyParser from 'body-parser'
-import { typeDefs, resolvers } from './src/schema'
+import { typeDefs, resolvers } from './src/schema.js'
 
 const startApolloServer = async (typeDefs, resolvers) => {
   const app = express()

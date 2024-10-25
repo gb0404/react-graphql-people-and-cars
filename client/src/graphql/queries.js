@@ -16,7 +16,7 @@ export const GET_PEOPLE = gql`
       }
     }
   }
-`
+`;
 
 export const GET_CARS = gql`
   query GetCars {
@@ -34,7 +34,7 @@ export const GET_CARS = gql`
       }
     }
   }
-`
+`;
 
 export const GET_PERSON_WITH_CARS = gql`
   query GetPersonWithCars($id: String!) {

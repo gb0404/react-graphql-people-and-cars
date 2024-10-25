@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { Button, Form, Input, InputNumber, Select } from 'antd'
 import { useEffect, useState } from 'react'
-import { UPDATE_CAR, GET_PEOPLE } from '../../graphql/queries'
+import { UPDATE_CAR, GET_PEOPLE, GET_CARS } from '../../graphql/queries'
 
 const UpdateCar = props => {
   const { id, year, make, model, price, personId, onButtonClick } = props
@@ -9,14 +9,67 @@ const UpdateCar = props => {
   const [, forceUpdate] = useState()
 
   const { loading, error, data } = useQuery(GET_PEOPLE)
-  const [updateCar] = useMutation(UPDATE_CAR)
+  const [updateCar] = useMutation(UPDATE_CAR, {
+    update(cache, { data: { updateCar } }) {
+      try {
+        // Update cars list
+        const existingCars = cache.readQuery({ query: GET_CARS });
+        if (existingCars) {
+          const updatedCars = existingCars.cars.map(car => 
+            car.id === updateCar.id ? updateCar : car
+          );
+          
+          cache.writeQuery({
+            query: GET_CARS,
+            data: {
+              cars: updatedCars
+            }
+          });
+        }
+
+        const { peoples } = cache.readQuery({ query: GET_PEOPLE });
+        const updatedPeoples = peoples.map(person => {
+          if (person.id === personId && person.id !== updateCar.personId) {
+            return {
+              ...person,
+              cars: (person.cars || []).filter(car => car.id !== updateCar.id)
+            };
+          }
+          if (person.id === updateCar.personId && person.id !== personId) {
+            return {
+              ...person,
+              cars: [...(person.cars || []), updateCar]
+            };
+          }
+          if (person.id === updateCar.personId && person.id === personId) {
+            return {
+              ...person,
+              cars: (person.cars || []).map(car => 
+                car.id === updateCar.id ? updateCar : car
+              )
+            };
+          }
+          return person;
+        });
+
+        cache.writeQuery({
+          query: GET_PEOPLE,
+          data: {
+            peoples: updatedPeoples
+          }
+        });
+      } catch (e) {
+        console.error('Cache update error:', e);
+      }
+    }
+  });
 
   useEffect(() => {
     forceUpdate()
   }, [])
 
   const onFinish = values => {
-    const { year, make, model, price, personId } = values
+    const { year, make, model, price, personId: newPersonId } = values
     updateCar({
       variables: {
         id,
@@ -24,7 +77,7 @@ const UpdateCar = props => {
         make,
         model,
         price: parseFloat(price),
-        personId
+        personId: newPersonId
       }
     })
     onButtonClick()
@@ -81,4 +134,5 @@ const UpdateCar = props => {
     </Form>
   )
 }
+
 export default UpdateCar

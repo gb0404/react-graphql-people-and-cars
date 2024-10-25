@@ -1,6 +1,6 @@
 import find from 'lodash.find'
 import remove from 'lodash.remove'
-import { filter } from 'lodash';
+import filter  from 'lodash';
 
 const peopleArray = []
 const cars = []
